@@ -19,7 +19,7 @@ from fabric.api import (
 from fabric.contrib.files import upload_template as _upload_template
 from fabric.contrib.files import exists
 
-from fabtools.utils import run_as_root
+from fabtools.utils import run_as_root, find_utility
 
 
 def is_file(path, use_sudo=False):
@@ -99,6 +99,85 @@ def mode(path, use_sudo=False):
         else:
             return result
 
+def delete(path, recursive=False, use_sudo=False):
+    """
+    Delete file or directory
+    """
+    rm = find_utility('rm', use_sudo)
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        if recursive:
+            return func('%s -rf %s' % (rm, path)).succeeded
+        else:
+            return func('%s -f %s' % (rm, path)).succeeded
+
+def create_file(path, source=None, content=None, use_sudo=False):
+    """
+    Creating or copying or downloading file
+    """
+    prt = ['https', 'http', 'ftp']
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        if source:
+            cs = "%s %s %s" % (find_utility('cp', use_sudo), source, path)
+            for p in prt:
+                if p in source[:5]:
+                    cs = "%s %s -O %s" % (find_utility('wget', use_sudo), source, path)
+                    break
+            return func(cs).succeeded
+        elif content:
+            return func('%s "%s" > %s' % (find_utility('echo', use_sudo), content, path)).succeeded
+        else:
+            return func('%s %s' % (find_utility('touch', use_sudo), path)).succeeded
+
+def create_dir(path, source=None, use_sudo=False):
+    """
+    Creating or copying directory
+    """
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        if source:
+            return func("%s -r %s %s" % (find_utility('cp', use_sudo), source, path)).succeeded
+        else:
+            return func('%s -p %s' % (find_utility('mkdir', use_sudo), path)).succeeded
+
+def create_link(path, target, use_sudo=False):
+    """
+    Creating symbolic link
+    """
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        return func("%s -s %s %s" % (find_utility('ln', use_sudo), source, path)).succeeded
+
+def set_owner(path, owner, recursive='', use_sudo=False):
+    """
+    Set owner with chown
+    """
+    if recursive:
+        recursive='-R'
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        return func("%s %s %s %s" % (find_utility('chown', use_sudo), recursive, owner, path)).succeeded
+
+def set_group(path, group, recursive='', use_sudo=False):
+    """
+    Set group with chown
+    """
+    if recursive:
+        recursive='-R'
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        return func("%s %s :%s %s" % (find_utility('chown', use_sudo), recursive, group, path)).succeeded
+
+def set_mode(path, mode, recursive='', use_sudo=False):
+    """
+    Set mode with chmod
+    """
+    if recursive:
+        recursive='-R'
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'warnings'), warn_only=True):
+        return func("%s %s %s %s" % (find_utility('chown', use_sudo), recursive, mode, path)).succeeded
 
 def upload_template(filename, destination, context=None, use_jinja=False,
                     template_dir=None, use_sudo=False, backup=True,
