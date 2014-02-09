@@ -19,12 +19,33 @@ from fabtools.files import uncommented_lines
 from fabtools.utils import run_as_root
 
 
-def exists(name):
+def exists(name, uid=None):
     """
     Check if a user exists.
     """
-    with settings(hide('running', 'stdout', 'warnings'), warn_only=True):
-        return run('getent passwd %(name)s' % locals()).succeeded
+    if uid:
+        with settings(hide('running', 'stdout', 'warnings'), warn_only=True):
+            if uid in run('getent passwd %(name)s' % locals()).split(":"):
+                return True
+            return False
+    else:
+        with settings(hide('running', 'stdout', 'warnings'), warn_only=True):
+            return run('getent passwd %(name)s' % locals()).succeeded
+
+def delete(name, remove_force=None, remove_files=None, remove_selinux=None):
+    """
+    Delete user.
+    """
+    args = []
+    if remove_force:
+        args.append('--force')
+    if remove_files:
+        args.append('--remove')
+    if remove_selinux:
+        args.append('--selinux-user')
+    args.append(name)
+    args = ' '.join(args)
+    run_as_root('userdel %s' % args)
 
 
 _SALT_CHARS = string.ascii_letters + string.digits + './'
