@@ -16,8 +16,7 @@ from fabtools.group import (
     create as _group_create,
 )
 from fabtools.files import uncommented_lines
-from fabtools.utils import run_as_root
-
+from fabtools.utils import run_as_root, find_utility
 
 def exists(name, uid=None):
     """
@@ -129,6 +128,7 @@ def create(name, comment=None, home=None, create_home=None, skeleton_dir=None,
     if system:
         args.append('-r')
     if shell:
+        shell = find_utility(shell)
         args.append('-s %s' % quote(shell))
     if uid:
         args.append('-u %s' % uid)
@@ -181,6 +181,7 @@ def modify(name, comment=None, home=None, move_current_home=False, group=None,
         crypted_password = _crypt_password(password)
         args.append('-p %s' % quote(crypted_password))
     if shell:
+        shell = find_utility(shell)
         args.append('-s %s' % quote(shell))
     if uid:
         args.append('-u %s' % quote(uid))
