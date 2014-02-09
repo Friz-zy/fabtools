@@ -44,3 +44,18 @@ def abspath(path, local=False):
         path = path_mod.join(cwd, path)
 
     return path_mod.normpath(path)
+
+def find_utility(name, use_sudo=False):
+    """
+    Return path to the utility
+    """
+    func = use_sudo and run_as_root or run
+    with settings(hide('running', 'stdout', 'stderr', 'warnings'),
+                  warn_only=True):
+        utility = func(u'which %s' % name)
+        if utility and exists(utility):
+            return utility
+        elif func(utility).succeeded:
+            return name
+        else:
+            abort('No "%s" utility was found on this system.' % name)
